@@ -65,6 +65,8 @@ class SinusoidalMixin(SourceMixinAbc):
     +------+----------------+---------------+-------+
     | Df   + damping factor + 0.01          + 1/sec |
     +------+----------------+---------------+-------+
+    | phi  + phase          + 0.0           + deg   |
+    +------+----------------+---------------+-------+
 
     The shape of the waveform is described by the following formula:
 
@@ -72,12 +74,12 @@ class SinusoidalMixin(SourceMixinAbc):
 
         V(t) = \begin{cases}
           V_o & \text{if}\ 0 \leq t < T_d, \\
-          V_o + V_a e^{-D_f(t-T_d)} \sin\left(2\pi f (t-T_d)\right) & \text{if}\ T_d \leq t < T_{stop}.
+          V_o + V_a e^{-D_f(t-T_d)} \sin\left(2\pi f (t-T_d) + \phi\right) & \text{if}\ T_d \leq t < T_{stop}.
         \end{cases}
 
     Spice syntax::
 
-        SIN ( Voffset Vamplitude Freq Tdelay DampingFactor )
+        SIN ( Voffset Vamplitude Freq Tdelay DampingFactor Phase)
 
     Public Attributes:
 
@@ -95,6 +97,8 @@ class SinusoidalMixin(SourceMixinAbc):
 
       :attr:`offset`
 
+      :attr:`phase`
+
     """
 
     ##############################################
@@ -102,16 +106,33 @@ class SinusoidalMixin(SourceMixinAbc):
     def __init__(self,
                  dc_offset=0,
                  ac_magnitude=1,
-                 offset=0, amplitude=1, frequency=50,
-                 delay=0, damping_factor=0):
+                 ac_phase=0,
+                 offset=None, amplitude=None, frequency=None,
+                 delay=None, damping_factor=None, phase=None):
+
+        self.no_sin_part = False
+        if all(x is None for x in (offset, amplitude, frequency, delay, damping_factor, phase)):
+            self.no_sin_part = True  
+        if offset is None:
+            offset = 0
+        if amplitude is None:
+            amplitude = 1
+        if frequency is None:
+            frequency = 50
+        if delay is None:
+            delay = 0
 
         self.dc_offset = self.AS_UNIT(dc_offset)
         self.ac_magnitude = self.AS_UNIT(ac_magnitude)
+        self.ac_phase = ac_phase
         self.offset = self.AS_UNIT(offset)
         self.amplitude = self.AS_UNIT(amplitude)
         self.frequency = as_Hz(frequency)   # Fixme: protect by setter?
         self.delay = as_s(delay)
-        self.damping_factor = as_Hz(damping_factor)
+        self.damping_factor = damping_factor
+        self.phase = phase  # TODO: implement unit (as_deg?)
+
+          
 
     ##############################################
 
@@ -129,11 +150,16 @@ class SinusoidalMixin(SourceMixinAbc):
     ##############################################
 
     def format_spice_parameters(self):
-        sin_part = join_list((self.offset, self.amplitude, self.frequency, self.delay, self.damping_factor))
-        return join_list((
-            'DC {} AC {}'.format(*str_spice_list(self.dc_offset, self.ac_magnitude)),
-            'SIN({})'.format(sin_part),
-        ))
+        sin_part = join_list((self.offset, self.amplitude, self.frequency, self.delay, self.damping_factor, self.phase))
+        if self.no_sin_part:
+            return join_list((
+                'DC {} AC {} {}'.format(*str_spice_list(self.dc_offset, self.ac_magnitude, self.ac_phase)),
+            ))
+        else:
+            return join_list((
+                'DC {} AC {} {}'.format(*str_spice_list(self.dc_offset, self.ac_magnitude, self.ac_phase)),
+                'SIN({})'.format(sin_part),
+            ))
 
 ####################################################################################################
 

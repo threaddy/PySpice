@@ -75,10 +75,12 @@ class SinusoidalMixin(SourceMixinAbc):
         V(t) = \begin{cases}
           V_o & \text{if}\ 0 \leq t < T_d, \\
           V_o + V_a e^{-D_f(t-T_d)} \sin\left(2\pi f (t-T_d) + \phi\right) & \text{if}\ T_d \leq t < T_{stop}.
+          V_o + V_a e^{-D_f(t-T_d)} \sin\left(2\pi f (t-T_d) + \phi\right) & \text{if}\ T_d \leq t < T_{stop}.
         \end{cases}
 
     Spice syntax::
 
+        SIN ( Voffset Vamplitude Freq Tdelay DampingFactor Phase)
         SIN ( Voffset Vamplitude Freq Tdelay DampingFactor Phase)
 
     Public Attributes:
@@ -128,6 +130,7 @@ class SinusoidalMixin(SourceMixinAbc):
 
         self.dc_offset = self.AS_UNIT(dc_offset)
         self.ac_magnitude = self.AS_UNIT(ac_magnitude)
+        self.ac_phase = ac_phase
         self.ac_phase = ac_phase
         self.offset = self.AS_UNIT(offset)
         self.amplitude = self.AS_UNIT(amplitude)

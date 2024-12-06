@@ -621,9 +621,9 @@ class NgSpiceShared:
             if content.startswith('Warning:'):
                 func = self._logger.warning
             # elif content.startswith('Warning:'):
-            elif content.strip() == "Using SPARSE 1.3 as Direct Linear Solver":
-                self._logger.warning('Using SPARSE 1.3 as Direct Linear Solver')
-                func = self._logger.warning
+            elif content.startswith('Error: Using SPARSE 1.3') or content.startswith('Error: bad set form'):
+                func = lambda x: None
+
             else:
                 self._error_in_stderr = True
                 func = self._logger.error
@@ -638,6 +638,7 @@ class NgSpiceShared:
                 self._error_in_stdout = True
             # if self._error_in_stdout:
             #     self._logger.warning(content)
+
 
         # Fixme: ???
         return self.send_char(message, ngspice_id)
@@ -852,7 +853,7 @@ class NgSpiceShared:
 
         if self._error_in_stdout or self._error_in_stderr:
             # raise NgSpiceCommandError("Command '{}' failed".format(command))
-            warnings.warn('NgSpiceCommandError: Command {} failed'.format(command))
+            warnings.warn('NgSpiceCommandError: Command {} warning'.format(command))
 
         if join_lines:
             return self.stdout
